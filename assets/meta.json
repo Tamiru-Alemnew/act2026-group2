@@ -1,0 +1,83 @@
+{
+  "model": "google/medsiglip-448",
+  "embedding_dim": 1152,
+  "class_names": [
+    "COVID",
+    "NORMAL",
+    "PNEUMONIA",
+    "TB"
+  ],
+  "prompts": {
+    "COVID": "a chest X-ray of a patient with COVID-19 pneumonia",
+    "NORMAL": "a normal healthy chest X-ray with no abnormality",
+    "PNEUMONIA": "a chest X-ray showing bacterial pneumonia with consolidation",
+    "TB": "a chest X-ray showing pulmonary tuberculosis"
+  },
+  "n_train": 1600,
+  "n_test": 600,
+  "probe_acc": 0.99,
+  "quant_acc": 0.99,
+  "zeroshot_acc": 0.5383333333333333,
+  "prompt_sensitivity": {
+    "bare class name": 0.385,
+    "generic template": 0.47,
+    "clinical description": 0.5383333333333333
+  },
+  "ece": 0.01080051263173418,
+  "n_wrong": 6,
+  "n_overconfident": 5,
+  "mean_conf_right": 0.9957370162010193,
+  "mean_conf_wrong": 0.9708516597747803,
+  "shortcut": {
+    "full": 0.99,
+    "lowres": 0.8033333333333333,
+    "border": 0.7633333333333333,
+    "meta": 0.7466666666666667,
+    "chance": 0.25
+  },
+  "leakage": {
+    "frac_above_098": 0.03,
+    "nn_same_class": 0.9483333333333334,
+    "median_nn_sim": 0.9040412306785583
+  },
+  "sizes_kb": {
+    "keras": 3683.9775390625,
+    "tflite_f32": 1220.3515625,
+    "tflite_int8": 312.140625
+  },
+  "latency_ms": {
+    "f32_ms": 0.0747753850009758,
+    "int8_ms": 0.04124940500029576
+  },
+  "align_note": "TB images sit at 0.241 from the 'PNEUMONIA' sentence vs 0.250 from their own",
+  "confusions": [
+    [
+      "COVID",
+      "PNEUMONIA",
+      3
+    ],
+    [
+      "TB",
+      "NORMAL",
+      1
+    ],
+    [
+      "COVID",
+      "TB",
+      1
+    ],
+    [
+      "TB",
+      "COVID",
+      1
+    ]
+  ],
+  "team": [
+    "ADD",
+    "YOUR",
+    "NAMES",
+    "HERE"
+  ],
+  "dataset": "COVID-19 Radiography Database (4-class chest X-ray)",
+  "event": "ACT-Africa 2026 Hackathon \u2014 Group 2, Health"
+}
