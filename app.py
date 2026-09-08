@@ -41,15 +41,18 @@ html {{ scroll-behavior: smooth; }}
 .block-container {{ padding-top: 3rem; padding-bottom: 5rem; max-width: 1480px; }}
 #MainMenu, footer {{ visibility: hidden; }}
 
-.hero h1 {{ font-size: 2.6rem; font-weight: 700; letter-spacing: -.03em;
+.hero h1 {{ font-size: 2.45rem; font-weight: 700; letter-spacing: -.03em;
             line-height: 1.22; margin: 0 !important; padding: .04em 0 !important; }}
 .hero h1.b {{ color: {AMBER}; }}
 .sub {{ font-size: 1.02rem; color: {DIM}; max-width: 60ch; line-height: 1.6;
         margin: .7rem 0 0; }}
-.chips {{ margin-top: .95rem; display: flex; flex-wrap: wrap; gap: .35rem; }}
-.chip {{ font-size: .76rem; color: {DIM}; border: 1px solid {LINE};
-         border-radius: 6px; padding: .25rem .6rem; }}
-.chip.live {{ color: {TEAL}; border-color: rgba(58,163,150,.4); }}
+.hero-grid {{ display: flex; gap: 3rem; align-items: center; flex-wrap: wrap; }}
+.hero-l {{ flex: 1 1 480px; min-width: 320px; }}
+.hero-r {{ flex: 0 1 560px; min-width: 300px; }}
+.hero-r img {{ border: 0 !important; background: none !important;
+               padding: 0 !important; border-radius: 0 !important; }}
+.status {{ font-size: .78rem; color: {FAINT}; margin-top: .5rem; text-align: right; }}
+.status b {{ color: {TEAL}; font-weight: 500; }}
 
 .lab {{ font-size: .88rem; font-weight: 600; color: {DIM}; margin: .1rem 0 .5rem; }}
 .note {{ font-size: .86rem; color: {FAINT}; line-height: 1.55; margin-top: .5rem; }}
@@ -237,19 +240,60 @@ def thumb(i, size=None):
 
 
 # ---------------------------------------------------------------- hero
+import base64 as _b64
+
+_NODES = [("X-ray", "512 × 512", LINE, INK),
+          ("MedSigLIP", "frozen", "rgba(58,163,150,.6)", TEAL),
+          ("embedding", f"{M['embedding_dim']:,}-d", LINE, INK),
+          ("linear head", "trained", "rgba(224,160,63,.6)", AMBER),
+          ("diagnosis", f"{len(C)} classes", LINE, INK)]
+
+_boxes = "".join(
+    f'<rect x="{12 + k*111}" y="22" width="92" height="60" rx="9" fill="{PANEL}" '
+    f'stroke="{stroke}" stroke-width="1"/>'
+    f'<text x="{58 + k*111}" y="48" text-anchor="middle" font-size="12.5" '
+    f'font-weight="600" fill="{fg}" font-family="IBM Plex Sans, sans-serif">{t1}</text>'
+    f'<text x="{58 + k*111}" y="65" text-anchor="middle" font-size="10" '
+    f'fill="{FAINT}" font-family="IBM Plex Sans, sans-serif">{t2}</text>'
+    for k, (t1, t2, stroke, fg) in enumerate(_NODES))
+
+_arrows = "".join(
+    f'<line x1="{108 + k*111}" y1="52" x2="{118 + k*111}" y2="52" stroke="#3b4653" '
+    f'stroke-width="1.4" marker-end="url(#ar)"/>' for k in range(4))
+
+_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 104" width="560" '
+    'height="104">'
+    '<defs><marker id="ar" viewBox="0 0 8 8" refX="7.5" refY="4" markerWidth="5.5" '
+    'markerHeight="5.5" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#3b4653"/>'
+    '</marker></defs>'
+    + _boxes + _arrows +
+    f'<text x="286" y="98" text-anchor="middle" font-size="10.5" fill="{FAINT}" '
+    f'font-family="IBM Plex Sans, sans-serif">one trainable block, '
+    f'{M["n_train"]:,} labelled images</text></svg>')
+
+PIPE = ('<img alt="Pipeline: chest X-ray, frozen MedSigLIP encoder, '
+        f'{M["embedding_dim"]}-dimensional embedding, trained linear head, '
+        f'{len(C)} classes" style="width:100%;max-width:560px;display:block" '
+        'src="data:image/svg+xml;base64,'
+        + _b64.b64encode(_SVG.encode()).decode() + '">')
+
 st.markdown(f"""
 <div class="hero">
-  <h1>Our model reads chest X-rays at {M['probe_acc']:.1%}.</h1>
-  <h1 class="b">{'So does a 16×16 blur.' if BROKEN
-                 else f'A 16×16 blur manages {SC["lowres"]:.1%}.'}</h1>
-  <p class="sub">MedSigLIP, frozen. A small head trained on {M['n_train']:,} images.
-  Then an audit of whether the number means anything.</p>
-  <div class="chips">
-    <span class="chip">{M['n_test']:,} held out</span>
-    <span class="chip">{M['embedding_dim']}-d embeddings</span>
-    <span class="chip">0 foundation weights trained</span>
-    <span class="chip {'live' if itp else ''}">
-      {'classifier live, ' + backend if itp else 'precomputed'}</span>
+  <div class="hero-grid">
+    <div class="hero-l">
+      <h1>Our classifier scores {M['probe_acc']:.1%}.</h1>
+      <h1 class="b">{'So does a 16×16 blur.' if BROKEN
+                     else f'A 16×16 blur manages {SC["lowres"]:.1%}.'}</h1>
+      <p class="sub">Four-class chest X-ray triage on a frozen MedSigLIP, and an
+      audit of whether that number means anything.</p>
+    </div>
+    <div class="hero-r">
+      {PIPE}
+      <div class="status">{'classifier running <b>live</b>, ' + backend
+                           if itp else 'classifier precomputed'} ·
+        {M['n_test']:,} held out</div>
+    </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -277,7 +321,7 @@ with T[0]:
                   [SC["full"], SC["lowres"], SC["border"], SC["meta"], SC["chance"]],
                   ["model", "degraded", "degraded", "degraded", "chance"],
                   ["model", "degraded", "chance"], [TEAL, AMBER, "#333c48"],
-                  height=240, xtitle="test accuracy", pct=True, xmax=1.08),
+                  height=240, xtitle="test accuracy", pct=True, xmax=1.16),
             use_container_width=True)
         if BROKEN:
             say(f"A 16×16 thumbnail reaches {SC['lowres']:.1%} — and shows no lung "
